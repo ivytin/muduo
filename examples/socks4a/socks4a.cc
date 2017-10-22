@@ -34,6 +34,7 @@ void onServerMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp)
   LOG_DEBUG << conn->name() << " " << buf->readableBytes();
   if (g_tunnels.find(conn->name()) == g_tunnels.end())
   {
+    //隧道还没有建立，客户端第一次发起连接
     if (buf->readableBytes() > 128)
     {
       conn->shutdown();
@@ -56,6 +57,8 @@ void onServerMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp)
         addr.sin_port = *static_cast<const in_port_t*>(port);
         addr.sin_addr.s_addr = *static_cast<const uint32_t*>(ip);
 
+        // <256说明为socka类型代理
+        // SOCKS 4A是SOCKS 4协议的简单扩展，允许客户端对无法解析的目的主机
         bool socks4a = sockets::networkToHost32(addr.sin_addr.s_addr) < 256;
         bool okay = false;
         if (socks4a)
@@ -91,6 +94,7 @@ void onServerMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp)
           tunnel->connect();
           g_tunnels[conn->name()] = tunnel;
           buf->retrieveUntil(where+1);
+          // \x5a 90 连接得到允许
           char response[] = "\000\x5aUVWXYZ";
           memcpy(response+2, &addr.sin_port, 2);
           memcpy(response+4, &addr.sin_addr.s_addr, 4);
@@ -107,6 +111,7 @@ void onServerMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp)
   }
   else if (!conn->getContext().empty())
   {
+    // tunnel中的serverConn_ 设置为了client请求时发起的connection为context
     const TcpConnectionPtr& clientConn
       = boost::any_cast<const TcpConnectionPtr&>(conn->getContext());
     clientConn->send(buf);

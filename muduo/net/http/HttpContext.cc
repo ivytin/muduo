@@ -63,6 +63,7 @@ bool HttpContext::parseRequest(Buffer* buf, Timestamp receiveTime)
   bool hasMore = true;
   while (hasMore)
   {
+    // 状态机，当前应解析请求行(method等)
     if (state_ == kExpectRequestLine)
     {
       const char* crlf = buf->findCRLF();
@@ -85,6 +86,7 @@ bool HttpContext::parseRequest(Buffer* buf, Timestamp receiveTime)
         hasMore = false;
       }
     }
+    // 头部
     else if (state_ == kExpectHeaders)
     {
       const char* crlf = buf->findCRLF();
@@ -112,6 +114,7 @@ bool HttpContext::parseRequest(Buffer* buf, Timestamp receiveTime)
     else if (state_ == kExpectBody)
     {
       // FIXME:
+      // 考虑到http body有多种可能，content-length, chunked等
     }
   }
   return ok;

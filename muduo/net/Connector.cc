@@ -88,7 +88,7 @@ void Connector::connect()
     case EINPROGRESS:
     case EINTR:
     case EISCONN:
-      connecting(sockfd);
+      connecting(sockfd)
       break;
 
     case EAGAIN:
